@@ -1,7 +1,6 @@
 package com.project.homework.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Data;
 
 @Entity
@@ -9,7 +8,18 @@ import lombok.Data;
 public class Product {
 
   @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
   private String name;
 
-  private Integer num;
+  private Integer amount;
+
+  private Double price;
+
+  private String media;
+
+  private String description;
+
+
 }
