@@ -15,10 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -54,7 +51,7 @@ public class ProductController {
         if(username == null || username.isBlank()){
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "user should login first");
         }
-        List<History> histories = historyRepository.findByUsername(username);
+        List<History> histories = historyRepository.findByUsernameOrderByPurchaseTime(username);
         //获得所有的id
         List<Long> productIdList = histories.stream().map(History::getProductId).distinct().collect(Collectors.toList());
         List<Product> productList = productRepository.findAllByIdIn(productIdList);
@@ -86,9 +83,12 @@ public class ProductController {
                 historyVo.setPrice(product.getPrice());
                 historyVo.setStatus(history.getStatus());
                 historyVo.setQuantity(history.getQuantity());
+                historyVo.setDate(history.getPurchaseTime());
                 list.add(historyVo);
             }
+            purchase.setTime(historyList.get(0).getPurchaseTime());
             purchase.setDetail(list);
+            purchase.setCost(cost);
             if(purchase.getStatus()==null){
                 if(success && fail){
                     purchase.setStatus("partial success");
@@ -102,8 +102,8 @@ public class ProductController {
             }
             purchaseList.add(purchase);
         });
-
-        return ResultUtils.success(purchaseList);
+        List<Purchase> sortedPurchaseList = purchaseList.stream().sorted(Comparator.comparing(Purchase::getTime).reversed()).collect(Collectors.toList());
+        return ResultUtils.success(sortedPurchaseList);
     }
 
     @PostMapping(path = "/buyProduct") // Map ONLY POST Requests
@@ -115,6 +115,7 @@ public class ProductController {
             return ResultUtils.error(ErrorCode.PARAMS_ERROR, "user should login first");
         }
         UUID id = UUID.randomUUID();
+        Date currentTime = new Date();
         for(Map.Entry<Long, Integer> entry:cart.entrySet()){
             History history = new History();
             history.setProductId(entry.getKey());
@@ -122,6 +123,7 @@ public class ProductController {
             history.setId(id.toString());
             history.setStatus("processing");
             history.setUsername(username);
+            history.setPurchaseTime(currentTime);
             historyRepository.save(history);
         }
         Thread thread = new Thread(()->{
@@ -143,18 +145,7 @@ public class ProductController {
 
     @Transactional
     public boolean purchaseProduct(Long productId, int quantity) {
-        Product product = productRepository.findById(productId).orElse(null);
-        if (product != null && product.getAmount() >= quantity) {
-            // 加锁查询并更新库存
-            product = productRepository.findByIdForUpdate(productId);
-            if (product.getAmount() >= quantity) {
-                // 库存足够，减少库存并生成订单
-                product.setAmount(product.getAmount() - quantity);
-                productRepository.save(product);
-                // 生成订单逻辑
-                return true;
-            }
-        }
-        return false;
+        int product = productRepository.findByIdForUpdate(productId, quantity);
+        return product == 1;
     }
 }

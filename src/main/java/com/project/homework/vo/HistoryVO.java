@@ -2,6 +2,8 @@ package com.project.homework.vo;
 
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
 public class HistoryVO {
 
@@ -12,4 +14,6 @@ public class HistoryVO {
     Integer quantity;
 
     Double price;
+
+    Date date;
 }

@@ -4,6 +4,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import lombok.Data;
 
+import java.util.Date;
+
 @Entity
 @Data
 public class History {
@@ -17,4 +19,6 @@ public class History {
     Integer quantity;
 
     Long productId;
+
+    Date purchaseTime;
 }
